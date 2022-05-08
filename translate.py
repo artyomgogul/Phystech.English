@@ -26,6 +26,3 @@ def translate(texts):
     l = l[37:]
     l = l[:l.index("\"")]
     return l
-
-print(l)
-
