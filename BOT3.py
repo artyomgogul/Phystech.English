@@ -33,6 +33,7 @@ def keyboard_level(message, text):
 	keyboard.add(but1, but2, but3, but4)
 	bot.send_message(chat_id=message.from_user.id, text = text, parse_mode = "HTML", reply_markup = keyboard)
 
+
 # Старт, выкидывает клаву с выбором уроня или гланое меню
 def start_message(message):
 	if str(message.chat.id) in USERS:
@@ -58,7 +59,7 @@ def level_english(message):
 	keyboard_level(message, "<b>Выберите новый уровень</b> ")
 
 
-# Ловит нажатие кнопки поьрентровать слова
+# Ловит нажатие кнопки потрентровать слова
 # Выктдывает клаву
 @bot.callback_query_handler(func=lambda c: c.data == 'training_words')
 def tr_w(callback):
@@ -68,10 +69,10 @@ def tr_w(callback):
 	but3 = types.InlineKeyboardButton(text='Рандомно', callback_data='trainingWords_rndom')
 	keyboard.add(but1, but2, but3)
 
-	bot.send_message(chat_id=callback.message.chat.id, text="Выберете режим, /mainmenu", parse_mode="HTML", reply_markup=keyboard)
+	bot.send_message(chat_id=callback.message.chat.id, text="Выберете режим, для выхода /mainmenu", parse_mode="HTML", reply_markup=keyboard)
 
-
-
+# Ловит нажатие кнопки Yandex Translate
+# Меняет режим на 'translate'
 @bot.callback_query_handler(func=lambda c: c.data == 'translate')
 def trans(message):
 	USERS[str(message.message.chat.id)]['mod'] = 'translate'
@@ -79,7 +80,8 @@ def trans(message):
 	bot.send_message(chat_id=message.from_user.id, text='Вы вводите текст, я вам перевод, для выхода в меню /mainmenu',
 	                 parse_mode="HTML")
 
-
+# Ловит выбор режима тренировки слов
+# Выкидывает слово и записывает правильный ответ в режим пользователя
 @bot.callback_query_handler(func=lambda c: c.data in ['trainingWords_en-ru','trainingWords_ru-en','trainingWords_rndom'])
 def training(callback):
 	USERS[str(callback.message.chat.id)]['mod'] = '%%%'+USERS[str(callback.message.chat.id)]['level'] + callback.data[13:]
@@ -90,7 +92,7 @@ def training(callback):
 	bot.send_message(chat_id=callback.message.chat.id,
 	                 text='Начнём',
 	                 parse_mode="HTML")
-	w1,w2 = choice(list(WORDS[USERS[str(callback.message.chat.id)]['mod'][3:14]].items()))
+	w1, w2 = choice(list(WORDS[USERS[str(callback.message.chat.id)]['mod'][3:14]].items()))
 	USERS[str(callback.message.chat.id)]['mod'] = USERS[str(callback.message.chat.id)]['mod'] + w2
 	bot.send_message(chat_id=callback.message.chat.id,
 	                 text=w1,
