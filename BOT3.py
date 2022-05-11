@@ -33,11 +33,8 @@ def keyboard_level(message, text):
 	keyboard.add(but1, but2, but3, but4)
 	bot.send_message(chat_id=message.from_user.id, text = text, parse_mode = "HTML", reply_markup = keyboard)
 
-
 # Старт, выкидывает клаву с выбором уроня или гланое меню
-@bot.message_handler(content_types=['start'])
 def start_message(message):
-
 	if str(message.chat.id) in USERS:
 		keyboard_menu(message, "<b>Чем бы вы хотели заняться?</b> ")
 	else:
@@ -46,11 +43,9 @@ def start_message(message):
 
 # Ловит выбор уровня, или нажатие на клавишу "главное меню"
 # Выкидывает клаву с главным меню и создаёт пользователя
-@bot.callback_query_handler(func=lambda c: c.data in ['eleme', 'prein', 'inter', 'upper', 'mainmenu'])
+@bot.callback_query_handler(func=lambda c: c.data in ['eleme', 'prein', 'inter', 'upper'])
 def main_menu(callback):
-
-	if callback.data != 'mainmenu':
-		USERS.update( { str(callback.message.chat.id): {'level': callback.data, 'mod': 'None'} } )
+	USERS.update( { str(callback.message.chat.id): {'level': callback.data, 'mod': 'None'} } )
 
 	keyboard_menu(callback, "<b>Чем бы вы хотели заняться?</b> ")
 
@@ -60,21 +55,20 @@ def main_menu(callback):
 @bot.callback_query_handler(func=lambda c: c.data == 'changе_level')
 def level_english(message):
 	USERS.pop(str(message.message.chat.id))
-
 	keyboard_level(message, "<b>Выберите новый уровень</b> ")
 
 
-
+# Ловит нажатие кнопки поьрентровать слова
+# Выктдывает клаву
 @bot.callback_query_handler(func=lambda c: c.data == 'training_words')
 def tr_w(callback):
 	keyboard = types.InlineKeyboardMarkup(row_width=1)
 	but1 = types.InlineKeyboardButton(text='С Англ на Русс', callback_data='trainingWords_en-ru')
 	but2 = types.InlineKeyboardButton(text='С Русс на Англ', callback_data='trainingWords_ru-en')
 	but3 = types.InlineKeyboardButton(text='Рандомно', callback_data='trainingWords_rndom')
-	but4 = types.InlineKeyboardButton(text='Назад', callback_data='mainmenu')
-	keyboard.add(but1, but2, but3, but4)
+	keyboard.add(but1, but2, but3)
 
-	bot.send_message(chat_id=callback.message.chat.id, text="Выберете режим", parse_mode="HTML", reply_markup=keyboard)
+	bot.send_message(chat_id=callback.message.chat.id, text="Выберете режим, /mainmenu", parse_mode="HTML", reply_markup=keyboard)
 
 
 
@@ -82,18 +76,17 @@ def tr_w(callback):
 def trans(message):
 	USERS[str(message.message.chat.id)]['mod'] = 'translate'
 
-	bot.send_message(chat_id=message.from_user.id, text='Вы вводите текст, я вам перевод, для выхода в меню /menu',
+	bot.send_message(chat_id=message.from_user.id, text='Вы вводите текст, я вам перевод, для выхода в меню /mainmenu',
 	                 parse_mode="HTML")
 
 
 @bot.callback_query_handler(func=lambda c: c.data in ['trainingWords_en-ru','trainingWords_ru-en','trainingWords_rndom'])
-def tr(callback):
+def training(callback):
 	USERS[str(callback.message.chat.id)]['mod'] = '%%%'+USERS[str(callback.message.chat.id)]['level'] + callback.data[13:]
 	bot.send_message(chat_id=callback.message.chat.id,
 					 text='Я пишу вам слово, вы мне его перевод, и я вас проверяю, если ответ верный, '
-					      'я просто пришлю следующее слово, для выхода напишите /menu',
+					      'я просто пришлю следующее слово, для выхода напишите /mainmenu',
 	                 parse_mode="HTML")
-
 	bot.send_message(chat_id=callback.message.chat.id,
 	                 text='Начнём',
 	                 parse_mode="HTML")
@@ -114,23 +107,43 @@ def read_message(message):
 	if message.text == '/start':
 		start_message(message)
 
-	if message.text == '/menu':
+	elif message.text == '/mainmenu':
 		keyboard_menu(message, "<b>Чем бы вы хотели заняться?</b> ")
 
 	elif mod == 'translate':   # Если пользователь будучи в режиме перевода отправляет сообщение, бот отправляет перевод
 
-		transl = translate(message.text, 'ru')
+		transl = 'Где буквы в ваших словах?'
+
+		for i in 'абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ':
+			if i in message.text:
+				transl = translate(message.text, 'en')
+				break
+
+		for i in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ':
+			if i in message.text:
+				transl = translate(message.text, 'ru')
+				break
 
 		bot.send_message(chat_id=message.from_user.id, text=transl, parse_mode="HTML")
 
 	elif mod[:3] == '%%%':          # Если пользователь будучи в режиме тренировки слов отправляет сообщение
-		print(USERS)
-		if USERS[str(message.chat.id)]['mod'][14:] == message.text:
+
+		if USERS[str(message.chat.id)]['mod'][14:] == message.text.strip():
 			USERS[str(message.from_user.id)]['mod'] = USERS[str(message.from_user.id)]['mod'][:14]
 			w1, w2 = choice(list(WORDS[USERS[str(message.from_user.id)]['mod'][3:]].items()))
 			USERS[str(message.from_user.id)]['mod'] = USERS[str(message.from_user.id)]['mod'] + w2
+
+			bot.send_message(chat_id=message.from_user.id, text=w1, parse_mode="HTML")
+
+		else:
 			bot.send_message(chat_id=message.from_user.id,
-			                 text=w1,
+			                 text='Неверно, ' + USERS[str(message.chat.id)]['mod'][14:],
 			                 parse_mode="HTML")
+
+			USERS[str(message.from_user.id)]['mod'] = USERS[str(message.from_user.id)]['mod'][:14]
+			w1, w2 = choice(list(WORDS[USERS[str(message.from_user.id)]['mod'][3:]].items()))
+			USERS[str(message.from_user.id)]['mod'] = USERS[str(message.from_user.id)]['mod'] + w2
+
+			bot.send_message(chat_id=message.from_user.id, text=w1, parse_mode="HTML")
 
 bot.polling()
